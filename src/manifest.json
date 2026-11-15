@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "GrayCoach",
+  "version": "1.0.0",
+  "description": "After a chess.com or Lichess game: Stockfish analysis plus a Claude coach review with tips. Finished games only.",
+  "homepage_url": "https://github.com/gislost/GrayCoach",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://api.chess.com/*",
+    "https://lichess.org/*",
+    "https://api.anthropic.com/*"
+  ],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    { "matches": ["https://www.chess.com/*"], "js": ["content/chesscom.js"], "run_at": "document_idle" },
+    { "matches": ["https://lichess.org/*"], "js": ["content/lichess.js"], "run_at": "document_idle" }
+  ],
+  "action": {
+    "default_title": "GrayCoach",
+    "default_popup": "popup/popup.html",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" }
+  },
+  "options_ui": { "page": "options/options.html", "open_in_tab": true },
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}

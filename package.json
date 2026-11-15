@@ -1,0 +1,28 @@
+{
+  "name": "graycoach",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser extension: post-game Stockfish analysis + Claude coach review for chess.com and Lichess",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gislost/GrayCoach.git"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "package": "node build.mjs && node package.mjs",
+    "shots": "node store/make-shots.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "chess.js": "^1.4.0",
+    "chessground": "^9.2.1",
+    "stockfish": "^19.0.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

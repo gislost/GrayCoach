@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GrayCoach</title>
+  <link rel="stylesheet" href="../ui.css">
+  <style>
+    body { width: 340px; padding: 14px; display: grid; gap: 12px; }
+    h1 { font-size: 16px; margin: 0; }
+    .stack { display: grid; gap: 8px; }
+    .stack button { width: 100%; justify-content: flex-start; }
+    #msg:empty { display: none; }
+    .recent { display: grid; gap: 2px; max-height: 220px; overflow: auto; }
+    .recent a { display: flex; gap: 6px; padding: 6px 8px; border-radius: 6px; color: var(--text); }
+    .recent a:hover { background: var(--panel-2); text-decoration: none; }
+    .recent .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .recent .res { color: var(--muted); font-variant-numeric: tabular-nums; }
+    h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 4px 0 0; }
+    footer { display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+  <h1>♞ GrayCoach</h1>
+  <div class="stack">
+    <button class="primary" type="button" id="thisGame">Review this game</button>
+    <button type="button" id="latestChesscom">Latest chess.com game</button>
+    <button type="button" id="latestLichess">Latest Lichess game</button>
+    <button type="button" id="paste">Paste a PGN</button>
+  </div>
+  <div id="msg" class="msg"></div>
+  <div id="recentBox" hidden>
+    <h2>Recent reviews</h2>
+    <div class="recent" id="recent"></div>
+  </div>
+  <footer>
+    <span id="keyStatus" class="small muted"></span>
+    <a href="#" id="settings" class="small">Settings</a>
+  </footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

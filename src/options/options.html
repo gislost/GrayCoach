@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings · GrayCoach</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="../ui.css">
+  <style>
+    main { max-width: 680px; margin: 0 auto; padding: 28px 16px 60px; display: grid; gap: 16px; }
+    .field { display: grid; gap: 6px; margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .key-row { display: flex; gap: 8px; }
+    .key-row input { flex: 1; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+    .check { display: flex; gap: 8px; align-items: flex-start; font-weight: 500; }
+    .check input { margin-top: 3px; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 16px; }
+    #status { min-height: 1.5em; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>♞ GrayCoach settings</h1>
+
+    <section class="card">
+      <h2>Claude coach</h2>
+      <div class="field">
+        <label for="apiKey">Anthropic API key</label>
+        <div class="key-row">
+          <input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+          <button type="button" id="showKey">Show</button>
+          <button type="button" id="testKey">Test key</button>
+        </div>
+        <div class="muted small">Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.
+          The key is stored only in this browser profile (extension storage) and is sent only to api.anthropic.com. Reviews are billed to your API account.</div>
+        <div id="keyResult" class="small"></div>
+      </div>
+      <div class="field">
+        <label for="model">Coach model</label>
+        <select id="model"></select>
+      </div>
+      <label class="check"><input type="checkbox" id="autoCoach">
+        <span>Get the coach review automatically when the engine finishes (one API call per game)</span></label>
+    </section>
+
+    <section class="card">
+      <h2>Engine</h2>
+      <div class="field">
+        <label for="depth">Analysis depth</label>
+        <select id="depth"></select>
+        <div class="muted small">Stockfish 19 runs in your browser. Deeper is more accurate but slower: a 40-move game takes roughly 30 s / 1–2 min / 3–5 min.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Your accounts</h2>
+      <p class="muted small">Used to know which side you played, and for the popup's "latest game" buttons. Only public game data is read.</p>
+      <div class="field">
+        <label for="chesscomUser">chess.com username</label>
+        <input type="text" id="chesscomUser" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="lichessUser">Lichess username</label>
+        <input type="text" id="lichessUser" autocomplete="off" spellcheck="false">
+      </div>
+    </section>
+
+    <div class="row">
+      <button class="primary" type="button" id="save">Save</button>
+      <span id="status" class="muted"></span>
+    </div>
+
+    <section class="card">
+      <h2>Saved games</h2>
+      <p class="muted small">The last 40 reviewed games and their analyses are kept so they reopen instantly.</p>
+      <button type="button" class="danger" id="clearGames">Delete saved games and reviews</button>
+      <span id="clearStatus" class="muted small"></span>
+    </section>
+
+    <p class="muted small">Fair play: the coach only reviews finished games. Using engine help during a game you are playing is against the rules on chess.com and Lichess.</p>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

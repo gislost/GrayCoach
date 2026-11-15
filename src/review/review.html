@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game review · GrayCoach</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="../ui.css">
+  <link rel="stylesheet" href="cg/chessground.base.css">
+  <link rel="stylesheet" href="cg/chessground.brown.css">
+  <link rel="stylesheet" href="cg/chessground.cburnett.css">
+  <link rel="stylesheet" href="review.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">♞ GrayCoach</div>
+    <div class="title" id="gameTitle"></div>
+    <div class="spacer"></div>
+    <a class="btn ghost" id="pasteLink" href="review.html?paste=1">Paste PGN</a>
+    <button class="ghost" id="settingsBtn" type="button">Settings</button>
+  </header>
+
+  <main>
+    <div class="msg err" id="fatal" hidden></div>
+
+    <!-- Paste a PGN -->
+    <section class="paste card" id="pastePanel" hidden>
+      <h2>Review a game from PGN</h2>
+      <p class="muted">Paste the PGN of a finished game (chess.com: Share → PGN; Lichess: Share &amp; export → PGN).</p>
+      <form id="pasteForm">
+        <textarea id="pgnInput" rows="12" spellcheck="false" placeholder='[Event "Live Chess"]&#10;[White "you"]&#10;...&#10;&#10;1. e4 e5 2. Nf3 Nc6 ...'></textarea>
+        <div class="row paste-opts">
+          <label for="pasteColor">You played</label>
+          <select id="pasteColor" style="width:auto">
+            <option value="auto">Detect from my usernames</option>
+            <option value="white">White</option>
+            <option value="black">Black</option>
+          </select>
+        </div>
+        <div class="msg" id="unfinishedBox" hidden>
+          <p><strong>This PGN has no result (*), so the game may still be in progress.</strong>
+            Using an engine or coach during a game you're playing is cheating on every chess site.</p>
+          <label class="row"><input type="checkbox" id="unfinishedOk"> This game is over. Analyze it anyway.</label>
+        </div>
+        <div class="msg err" id="pasteError" hidden></div>
+        <div class="row"><button class="primary" type="submit">Analyze game</button></div>
+      </form>
+    </section>
+
+    <!-- Review -->
+    <section class="review" id="reviewPanel" hidden>
+      <div class="board-col">
+        <div class="tag" id="tagTop"></div>
+        <div class="board-row">
+          <div class="evalbar" id="evalbar" title="Evaluation">
+            <div class="evalbar-fill" id="evalFill"></div>
+            <span class="evalbar-text" id="evalText"></span>
+          </div>
+          <div class="board-box"><div id="board" class="cg-wrap"></div></div>
+        </div>
+        <div class="tag" id="tagBottom"></div>
+        <div class="controls row">
+          <button type="button" id="btnFirst" title="Start (Home)" aria-label="First move">⏮</button>
+          <button type="button" id="btnPrev" title="Previous (←)" aria-label="Previous move">◀</button>
+          <button type="button" id="btnNext" title="Next (→)" aria-label="Next move">▶</button>
+          <button type="button" id="btnLast" title="End (End)" aria-label="Last move">⏭</button>
+          <div class="spacer"></div>
+          <label class="row small arrow-toggle"><input type="checkbox" id="arrowToggle" checked> Engine arrow</label>
+          <button type="button" id="btnFlip" title="Flip board (F)">⇅ Flip</button>
+        </div>
+        <div class="card move-info" id="moveInfo"></div>
+      </div>
+
+      <div class="mid-col">
+        <div class="card" id="progressCard">
+          <div class="row"><span class="spinner"></span><strong id="progressText">Starting Stockfish…</strong></div>
+          <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+          <p class="muted small" id="progressNote">Stockfish runs right here in your browser. Nothing is uploaded.</p>
+        </div>
+        <div class="card summary" id="summaryCard" hidden></div>
+        <div class="card graph-card">
+          <svg id="graph" viewBox="0 0 600 120" preserveAspectRatio="none" role="img" aria-label="Evaluation graph"></svg>
+        </div>
+        <div class="card moves-card"><div id="moves" class="moves"></div></div>
+      </div>
+
+      <div class="coach-col">
+        <div class="card coach" id="coachCard"></div>
+        <div class="card chat" id="chatCard" hidden>
+          <h3>Ask the coach</h3>
+          <p class="muted small">Questions are about the move you're on. Click through the game and ask "why was this bad?", "what was the plan here?" and so on.</p>
+          <div class="chat-log" id="chatLog"></div>
+          <form class="chat-form" id="chatForm">
+            <textarea id="chatInput" rows="2" placeholder="Ask about this position…"></textarea>
+            <div class="row">
+              <button class="primary" type="submit" id="chatSend">Ask</button>
+              <button class="ghost small" type="button" id="chatClear">Clear chat</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="review.js"></script>
+</body>
+</html>
