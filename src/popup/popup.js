@@ -42,6 +42,11 @@ async function init() {
   $('keyStatus').textContent = s.apiKey ? `Coach: ${model}` : 'Engine only (add an API key for the coach)';
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  // Side panel mode: the panel must be opened during the click, so these messages go out before any await.
+  const where = s.openIn === 'tab' ? 'tab' : 'panel';
+  const startPanel = () => {
+    if (where === 'panel') chrome.runtime.sendMessage({ type: 'openPanel', tabId: tab?.id }).catch(() => {});
+  };
   const onChessSite = /^https:\/\/(www\.chess\.com|lichess\.org)\//.test(tab?.url || '');
   const thisBtn = $('thisGame');
   if (!onChessSite) {
@@ -50,11 +55,14 @@ async function init() {
   }
   thisBtn.addEventListener('click', () =>
     busy(thisBtn, 'Loading game…', async () => {
+      startPanel();
       let res;
       try {
-        res = await chrome.tabs.sendMessage(tab.id, { type: 'reviewThisGame' });
+        res = await chrome.tabs.sendMessage(tab.id, { type: 'reviewThisGame', where });
       } catch {
-        throw new Error('Reload the chess tab and try again (the extension was installed or updated after it opened).');
+        const error = 'Reload the chess tab and try again (the extension was installed or updated after it opened).';
+        if (where === 'panel') send({ type: 'panelError', where, tabId: tab.id, error }).catch(() => {});
+        throw new Error(error);
       }
       if (!res?.ok) throw new Error(res?.error || 'No finished game found on this page.');
     }),
@@ -66,11 +74,11 @@ async function init() {
   if (s.lichessUser) li.textContent = `Latest Lichess game (${s.lichessUser})`;
   cc.addEventListener('click', () => {
     if (!s.chesscomUser) return say('Set your chess.com username in Settings first.', 'err');
-    busy(cc, 'Finding your latest game…', () => send({ type: 'latestGame', site: 'chess.com' }));
+    busy(cc, 'Finding your latest game…', () => send({ type: 'latestGame', site: 'chess.com', where, tabId: tab?.id }));
   });
   li.addEventListener('click', () => {
     if (!s.lichessUser) return say('Set your Lichess username in Settings first.', 'err');
-    busy(li, 'Finding your latest game…', () => send({ type: 'latestGame', site: 'lichess' }));
+    busy(li, 'Finding your latest game…', () => send({ type: 'latestGame', site: 'lichess', where, tabId: tab?.id }));
   });
   $('paste').addEventListener('click', () => openTab('review/review.html?paste=1'));
   $('settings').addEventListener('click', (e) => {
@@ -96,7 +104,10 @@ async function init() {
       a.title = [r.site, r.date].filter(Boolean).join(' · ');
       a.addEventListener('click', (e) => {
         e.preventDefault();
-        openTab('review/review.html?g=' + encodeURIComponent(r.key));
+        send({ type: 'openSaved', key: r.key, where, tabId: tab?.id }).then(
+          () => window.close(),
+          (err) => say(err.message || String(err), 'err'),
+        );
       });
       box.appendChild(a);
     }

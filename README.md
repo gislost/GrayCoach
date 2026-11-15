@@ -5,6 +5,8 @@ A Chrome/Edge extension that reviews your **finished** chess.com and Lichess gam
 - **Stockfish 19** runs in your browser and grades every move (best, excellent, good, inaccuracy, mistake, blunder, missed chance), with accuracy, average centipawn loss and an eval graph.
 - **Claude** reads the engine report and writes a coach review: what decided the game, 3–6 key moments, strengths, weaknesses, tips and one thing to train next.
 - **Ask the coach** questions about any position while you click through the game.
+- **Click any move the coach names** to jump the board there. Moves it suggests (that weren't played) show as a green arrow.
+- Reviews open in the browser's **side panel**, right next to the game. Prefer a full tab? Change it in Settings, or click **Open in tab ↗**.
 
 ![A Stockfish review: 9...b5 graded a mistake, with the better move Qc7 drawn on the board](store/screenshots/1-review-mistake.png)
 
@@ -35,7 +37,8 @@ Then load the `dist` folder with **Load unpacked** as above. `npm run watch` reb
 
 - Finish a game on chess.com or Lichess, then click the green **♞ Coach review** button (bottom right), or use the toolbar popup → **Review this game**.
 - The popup also has **Latest chess.com game**, **Latest Lichess game** (from your usernames) and **Paste a PGN**.
-- In the review: ← → step through moves, **F** flips the board, click the graph or a key moment to jump, and **Show the better move** shows what the engine wanted.
+- In the review: ← → step through moves, **F** flips the board, click the graph, a key moment or a move in the coach's text to jump, and **Show the better move** shows what the engine wanted.
+- The review opens in the side panel next to the game. Settings → **Where reviews open** switches to a new tab instead. Pasted PGNs always open in a tab.
 
 Analyses and coach reviews for your last 40 games are saved locally, so they reopen instantly.
 

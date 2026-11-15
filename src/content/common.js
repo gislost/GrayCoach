@@ -88,17 +88,35 @@ export function runContent(site) {
   tick();
   setInterval(tick, 1000); // both sites are single-page apps
 
-  async function openReview() {
-    const game = await site.fetchGame(site.detect());
-    const res = await chrome.runtime.sendMessage({ type: 'openReview', game });
-    if (!res?.ok) throw new Error(res?.error || 'Could not open the review tab.');
+  // Where reviews open, known before a click: the side panel has to be opened during the click itself.
+  const whereOf = (s) => (s?.openIn === 'tab' ? 'tab' : 'panel');
+  let where = 'panel';
+  getSettingsLite().then((s) => { where = whereOf(s); });
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.settings) where = whereOf(changes.settings.newValue);
+  });
+
+  async function openReview(mode) {
+    let game;
+    try {
+      game = await site.fetchGame(site.detect());
+    } catch (e) {
+      // The side panel is already open and waiting: tell it why nothing is coming.
+      if (mode === 'panel') chrome.runtime.sendMessage({ type: 'panelError', where: mode, error: e.message || String(e) }).catch(() => {});
+      throw e;
+    }
+    const res = await chrome.runtime.sendMessage({ type: 'openReview', game, where: mode });
+    if (!res?.ok) throw new Error(res?.error || 'Could not open the review.');
+    return res;
   }
 
   ui.onClick(async () => {
+    const mode = where;
+    if (mode === 'panel') chrome.runtime.sendMessage({ type: 'openPanel' }).catch(() => {}); // before any await
     ui.setBusy(true, 'Loading game…');
     try {
-      await openReview();
-      ui.toast('Review opened in a new tab.');
+      const res = await openReview(mode);
+      ui.toast(res.where === 'panel' ? 'Review opened in the side panel.' : 'Review opened in a new tab.');
     } catch (e) {
       ui.toast(e.message || String(e), 'err');
     } finally {
@@ -108,7 +126,8 @@ export function runContent(site) {
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type !== 'reviewThisGame') return;
-    openReview().then(
+    // The popup already asked for the side panel when it was clicked.
+    openReview(msg.where === 'panel' ? 'panel' : 'tab').then(
       () => sendResponse({ ok: true }),
       (e) => sendResponse({ ok: false, error: e.message || String(e) }),
     );

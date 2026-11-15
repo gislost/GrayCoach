@@ -17,6 +17,7 @@ export const DEFAULTS = {
   model: 'claude-opus-5-5',
   depth: 15,
   autoCoach: true,
+  openIn: 'panel', // 'panel' (side panel next to the game) or 'tab'
   chesscomUser: '',
   lichessUser: '',
 };

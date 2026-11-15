@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "GrayCoach",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "After a chess.com or Lichess game: Stockfish analysis plus a Claude coach review with tips. Finished games only.",
   "homepage_url": "https://github.com/gislost/GrayCoach",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "sidePanel"],
   "host_permissions": [
     "https://api.chess.com/*",
     "https://lichess.org/*",

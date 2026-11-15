@@ -25,6 +25,7 @@ function readForm() {
     model: $('model').value,
     depth: Number($('depth').value),
     autoCoach: $('autoCoach').checked,
+    openIn: $('openIn').value,
     chesscomUser: $('chesscomUser').value.trim(),
     lichessUser: $('lichessUser').value.trim(),
   };
@@ -38,6 +39,7 @@ async function init() {
   $('model').value = s.model;
   $('depth').value = String(s.depth);
   $('autoCoach').checked = s.autoCoach;
+  $('openIn').value = s.openIn === 'tab' ? 'tab' : 'panel';
   $('chesscomUser').value = s.chesscomUser;
   $('lichessUser').value = s.lichessUser;
 

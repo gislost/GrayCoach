@@ -8,6 +8,7 @@ import { getSettings, MODELS } from '../lib/settings.js';
 import { loadGame, loadReview, saveReview, saveGame } from '../lib/store.js';
 import { assetURL, openOptions, storageSet } from '../lib/ext.js';
 import { colorOf } from '../lib/pgn.js';
+import { linkMoves, linkMoveAt, startsWithSan } from '../lib/movelinks.js';
 
 const CACHE_VERSION = 1;
 const $ = (id) => document.getElementById(id);
@@ -27,6 +28,7 @@ const S = {
   orientation: 'white',
   playerColor: null,
   showBetter: false,
+  hint: null, // { uci, label }: a move the coach suggested, drawn as an arrow
   analysing: false,
   coachBusy: false,
   coachError: null,
@@ -59,7 +61,8 @@ function md(text) {
       const flushL = () => { if (list.length) { html += `<ul>${list.map((x) => `<li>${inlineMd(x)}</li>`).join('')}</ul>`; list = []; } };
       for (const line of block.split('\n')) {
         const m = line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)/);
-        if (m) { flushP(); list.push(m[1]); } else { flushL(); if (line.trim()) para.push(line); }
+        // "6. cxd4 was good" is a move, not a numbered list item.
+        if (m && !(/^\s*\d/.test(line) && startsWithSan(m[1]))) { flushP(); list.push(m[1]); } else { flushL(); if (line.trim()) para.push(line); }
       }
       flushP();
       flushL();
@@ -67,6 +70,10 @@ function md(text) {
     })
     .join('');
 }
+
+// Coach text with clickable moves.
+const coachMd = (s) => linkMoves(md(s), S.game);
+const coachInline = (s) => linkMoves(inlineMd(s), S.game);
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const colorName = (c) => (c === 'w' || c === 'white' ? 'White' : 'Black');
@@ -196,6 +203,7 @@ function renderBoard() {
     S.cg.set({ fen: pos.fen, turnColor: cgColor(pos.turn), check: pos.inCheck, lastMove: ply ? [ply.from, ply.to] : undefined });
     if (m && LABEL_FILL[m.cls]) shapes.push({ orig: ply.to, label: { text: CLASSES[m.cls].glyph, fill: LABEL_FILL[m.cls] } });
     if ($('arrowToggle').checked && S.evals[i]?.best) shapes.push(arrow(S.evals[i].best, 'paleBlue'));
+    if (S.hint) shapes.push(arrow(S.hint.uci, 'green'));
   }
   S.cg.setAutoShapes(shapes.filter(Boolean));
 }
@@ -223,10 +231,13 @@ function renderMoveInfo() {
   const el = $('moveInfo');
   const i = S.cur;
   const g = S.game;
+  const hintNote = S.hint && !S.showBetter
+    ? `<p class="hint-note"><span class="hint-arrow">➚</span> Green arrow: <strong>${esc(S.hint.label)}</strong>, the coach's suggestion (not played).</p>`
+    : '';
   if (i === 0) {
     const ev = S.evals[0];
     el.innerHTML = `<div class="headline"><span class="san">Start position</span>${ev ? `<span class="ev">${esc(formatEval(ev))}</span>` : ''}</div>
-      <p class="muted small">Use ← → (or click a move, the graph, or a key moment) to step through the game.</p>`;
+      ${hintNote || '<p class="muted small">Use ← → (or click a move, the graph, or a key moment) to step through the game.</p>'}`;
     return;
   }
   const ply = g.plies[i - 1];
@@ -235,7 +246,7 @@ function renderMoveInfo() {
   if (!m) {
     const ev = S.evals[i];
     el.innerHTML = `<div class="headline"><span class="san">${esc(label)}</span>${ev ? `<span class="ev">${esc(formatEval(ev))}</span>` : ''}</div>
-      <p class="muted small">${S.analysing ? 'Grades appear when the engine finishes.' : ''}</p>`;
+      <p class="muted small">${S.analysing ? 'Grades appear when the engine finishes.' : ''}</p>${hintNote}`;
     return;
   }
   const cls = CLASSES[m.cls];
@@ -252,7 +263,7 @@ function renderMoveInfo() {
       <span class="san">${esc(label)}</span>
       <span class="badge cls-${m.cls}">${esc(cls.label)}${cls.glyph ? ' ' + esc(cls.glyph) : ''}</span>
       <span class="ev">${esc(formatEval(m.evalBefore))} → ${esc(formatEval(m.evalAfter))}</span>
-    </div>${body}` +
+    </div>${body}${hintNote}` +
     (canShow ? `<div class="actions"><button type="button" id="betterBtn">${S.showBetter ? 'Back to the game' : 'Show the better move'}</button></div>` : '');
   if (canShow) {
     $('betterBtn').addEventListener('click', () => {
@@ -339,15 +350,27 @@ function renderGraph() {
 }
 
 // ---------- navigation ----------
-function show(i) {
+function show(i, hint = null) {
   S.cur = clamp(i, 0, S.game.plies.length);
   S.showBetter = false;
+  S.hint = hint;
   renderBoard();
   renderEvalBar();
   renderMoveInfo();
   highlightMove();
   renderGraph();
+  markCurrent();
+}
+
+/** Highlights the key moment and the coach-text moves that match the board. */
+function markCurrent() {
   document.querySelectorAll('.moment').forEach((n) => n.classList.toggle('active', +n.dataset.ply === S.cur));
+  document.querySelectorAll('.mvlink').forEach((n) => {
+    const on = n.classList.contains('alt')
+      ? S.hint && +n.dataset.ply === S.cur && n.dataset.uci === S.hint.uci
+      : !S.hint && +n.dataset.ply === S.cur;
+    n.classList.toggle('cur', !!on);
+  });
 }
 
 function setOrientation(o) {
@@ -554,26 +577,26 @@ function renderCoach() {
       const gm = S.graded.moves[ply - 1];
       return `<div class="moment" data-ply="${ply}" tabindex="0" role="button">
         <div><span class="m-move ${gm ? 'cls-' + gm.cls : 'muted'}">${esc(plyLabel(ply))}</span><span class="m-title">${esc(m.title)}</span></div>
-        <div>${inlineMd(m.explanation)}</div>
-        ${m.better_move ? `<div class="small"><strong>Better:</strong> ${inlineMd(m.better_move)}</div>` : ''}
-        <div class="lesson">${inlineMd(m.lesson)}</div>
+        <div>${coachInline(m.explanation)}</div>
+        ${m.better_move ? `<div class="small"><strong>Better:</strong> ${linkMoveAt(m.better_move, ply, S.game) ?? coachInline(m.better_move)}</div>` : ''}
+        <div class="lesson">${coachInline(m.lesson)}</div>
       </div>`;
     })
     .join('');
-  const list = (arr) => `<ul>${(arr || []).map((x) => `<li>${inlineMd(x)}</li>`).join('')}</ul>`;
+  const list = (arr) => `<ul>${(arr || []).map((x) => `<li>${coachInline(x)}</li>`).join('')}</ul>`;
   const otherSide = r && S.cache.coachFor && S.playerColor && S.cache.coachFor !== S.playerColor;
   el.innerHTML = `
     ${otherSide ? `<div class="msg">This review was written for ${esc(colorName(S.cache.coachFor))}. <button type="button" id="coachSwitch">Re-run for ${esc(colorName(S.playerColor))}</button></div><p></p>` : ''}
-    <h2>${esc(r.headline)}</h2>
-    ${md(r.summary)}
-    <div class="phase"><strong>Opening</strong> ${inlineMd(r.opening)}</div>
-    <div class="phase"><strong>Middlegame</strong> ${inlineMd(r.middlegame)}</div>
-    ${r.endgame ? `<div class="phase"><strong>Endgame</strong> ${inlineMd(r.endgame)}</div>` : ''}
+    <h2>${linkMoves(esc(r.headline), S.game)}</h2>
+    ${coachMd(r.summary)}
+    <div class="phase"><strong>Opening</strong> ${coachInline(r.opening)}</div>
+    <div class="phase"><strong>Middlegame</strong> ${coachInline(r.middlegame)}</div>
+    ${r.endgame ? `<div class="phase"><strong>Endgame</strong> ${coachInline(r.endgame)}</div>` : ''}
     <h3>Key moments</h3>${moments}
     <h3>What went well</h3>${list(r.strengths)}
     <h3>What to fix</h3>${list(r.weaknesses)}
-    <h3>Tips</h3>${(r.tips || []).map((t) => `<div class="tip"><strong>${esc(t.title)}</strong>${inlineMd(t.detail)}</div>`).join('')}
-    <h3>Train next</h3><div class="focus">${inlineMd(r.training_focus)}</div>
+    <h3>Tips</h3>${(r.tips || []).map((t) => `<div class="tip"><strong>${linkMoves(esc(t.title), S.game)}</strong>${coachInline(t.detail)}</div>`).join('')}
+    <h3>Train next</h3><div class="focus">${coachInline(r.training_focus)}</div>
     ${S.coachError ? `<div class="msg err" style="margin-top:12px">${esc(S.coachError)}</div>` : ''}
     <div class="row coach-foot small muted">
       <span>Coach: ${esc(modelLabel(S.cache.coachModel))}</span><span class="spacer"></span>
@@ -581,7 +604,7 @@ function renderCoach() {
     </div>`;
   el.querySelectorAll('.moment').forEach((n) => {
     const go = () => show(+n.dataset.ply);
-    n.addEventListener('click', go);
+    n.addEventListener('click', (e) => { if (!e.target.closest('.mvlink')) go(); });
     n.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
   });
   $('coachRerun').addEventListener('click', () => {
@@ -589,7 +612,7 @@ function renderCoach() {
     runCoach();
   });
   $('coachSwitch')?.addEventListener('click', runCoach);
-  document.querySelectorAll('.moment').forEach((n) => n.classList.toggle('active', +n.dataset.ply === S.cur));
+  markCurrent();
 }
 
 // ---------- chat ----------
@@ -627,12 +650,13 @@ function renderChat() {
   $('chatLog').innerHTML = chat
     .map((t) => (t.role === 'user'
       ? `<div class="bubble user"><div class="ctx">${esc(t.at || '')}</div>${esc(t.q || t.content)}</div>`
-      : `<div class="bubble assistant">${md(t.content)}</div>`))
+      : `<div class="bubble assistant">${coachMd(t.content)}</div>`))
     .join('') + (S.chatBusy ? '<div class="bubble assistant"><span class="spinner"></span></div>' : '');
   const log = $('chatLog');
   log.scrollTop = log.scrollHeight;
   $('chatSend').disabled = S.chatBusy;
   $('chatClear').hidden = !chat.length;
+  markCurrent();
 }
 
 async function sendChat(question) {
@@ -681,6 +705,15 @@ function bindUi() {
     const mv = e.target.closest('.mv[data-i]');
     if (mv) show(+mv.dataset.i);
   });
+  // Moves in the coach's text: jump there; a move that wasn't played shows as an arrow.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a.mvlink');
+    if (!a) return;
+    e.preventDefault();
+    show(+a.dataset.ply, a.dataset.uci ? { uci: a.dataset.uci, label: a.dataset.label } : null);
+    const b = $('board').getBoundingClientRect();
+    if (b.bottom < 60 || b.top > innerHeight - 60) $('board').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  });
   $('graph').addEventListener('click', (e) => {
     const r = e.currentTarget.getBoundingClientRect();
     show(Math.round(((e.clientX - r.left) / r.width) * S.game.plies.length));
@@ -724,11 +757,37 @@ function bindUi() {
   }
 }
 
+/** Side panel, before the game arrives: "Loading the game…" or why it couldn't load. */
+function panelWaiting(error) {
+  const el = $('fatal');
+  el.hidden = false;
+  if (error) {
+    el.className = 'msg err';
+    el.textContent = error;
+    return;
+  }
+  el.className = 'msg panel-wait';
+  el.innerHTML = '<span class="spinner"></span> <span>Loading the game…</span>';
+  setTimeout(() => {
+    el.lastElementChild.textContent = 'Still loading… If nothing happens, click Coach review on the game again.';
+  }, 30000);
+}
+
 async function main() {
   $('settingsBtn').addEventListener('click', openOptions);
   const params = new URLSearchParams(location.search);
+  // ?panel=1: shown in the browser's side panel next to the chess site (see background.js).
+  const inPanel = params.has('panel');
+  document.body.classList.toggle('in-panel', inPanel);
   S.settings = await getSettings();
   const key = params.get('g');
+  if (inPanel) {
+    $('pasteLink').hidden = true;
+    if (!key) return panelWaiting(params.get('error'));
+    const pop = $('popOut');
+    pop.href = 'review.html?g=' + encodeURIComponent(key);
+    pop.hidden = false;
+  }
   if (params.has('paste') || !key) return showPaste();
 
   const rec = await loadGame(key);

@@ -2,25 +2,95 @@ import { saveGame } from './lib/store.js';
 import { getSettings } from './lib/settings.js';
 import { parsePgnHeaders, colorOf } from './lib/pgn.js';
 
-const handlers = { openReview, chesscomPublic, latestGame };
+const handlers = { openPanel, openReview, openSaved, panelError, chesscomPublic, latestGame };
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const h = handlers[msg?.type];
   if (!h) return;
-  h(msg).then(
+  // Handlers run synchronously up to their first await, so one that opens the side panel does it
+  // while the click that sent the message still counts as a user action.
+  h(msg, sender).then(
     (data) => sendResponse({ ok: true, ...data }),
-    (e) => sendResponse({ ok: false, error: e?.message || String(e) }),
+    async (e) => {
+      const error = e?.message || String(e);
+      if (msg.where === 'panel' && msg.type !== 'panelError') await showPanelError(tabOf(msg, sender), error);
+      sendResponse({ ok: false, error });
+    },
   );
   return true; // async response
 });
 
-async function openReview({ game }) {
+// ---------- where reviews open ----------
+// 'panel': the browser's side panel for the chess tab the user clicked from (Chrome/Edge 114+).
+// It opens at once showing "Loading…", and the game is loaded into it when it's ready. The panel
+// only ever shows a game the user asked for. If it can't open, the review opens in a new tab.
+
+const REVIEW = 'review/review.html';
+const tabOf = (msg, sender) => msg.tabId ?? sender?.tab?.id;
+const panelOpens = new Map(); // tabId -> Promise<boolean>: did the last open attempt work?
+
+function setPanel(tabId, query) {
+  return chrome.sidePanel.setOptions({ tabId, path: `${REVIEW}?panel=1&${query}`, enabled: true });
+}
+
+/** Opens the side panel on a tab. Call it before any await in a message handler (see above). */
+function startPanel(tabId, query = 'loading=1') {
+  let p;
+  try {
+    if (!chrome.sidePanel?.open || !Number.isInteger(tabId)) throw new Error('No side panel here.');
+    p = Promise.all([setPanel(tabId, query), chrome.sidePanel.open({ tabId })]).then(() => true);
+  } catch (e) {
+    p = Promise.reject(e);
+  }
+  p = p.catch((e) => {
+    console.warn('GrayCoach: side panel did not open, using a tab.', e?.message || e);
+    return false;
+  });
+  panelOpens.set(tabId, p);
+  return p;
+}
+
+async function showPanelError(tabId, error) {
+  if (await panelOpens.get(tabId)) await setPanel(tabId, 'error=' + encodeURIComponent(String(error).slice(0, 400)));
+}
+
+async function openTab(key) {
+  await chrome.tabs.create({ url: chrome.runtime.getURL(`${REVIEW}?g=${encodeURIComponent(key)}`) });
+}
+
+/** The page's Coach review button (or the popup) asks for the panel before it fetches the game. */
+async function openPanel(msg, sender) {
+  return { opened: await startPanel(tabOf(msg, sender)) };
+}
+
+/** The game couldn't be fetched: say why in the panel that's waiting for it. */
+async function panelError(msg, sender) {
+  await showPanelError(tabOf(msg, sender), msg.error || 'Something went wrong.');
+  return {};
+}
+
+async function openReview(msg, sender) {
+  const { game } = msg;
   if (!game || !game.site || !game.id || !(game.pgn || Array.isArray(game.uci))) {
     throw new Error('Game data was incomplete.');
   }
   const key = await saveGame(game);
-  await chrome.tabs.create({ url: chrome.runtime.getURL('review/review.html?g=' + encodeURIComponent(key)) });
-  return { key };
+  const tabId = tabOf(msg, sender);
+  if (msg.where === 'panel' && (await panelOpens.get(tabId))) {
+    await setPanel(tabId, 'g=' + encodeURIComponent(key));
+    return { key, where: 'panel' };
+  }
+  await openTab(key);
+  return { key, where: 'tab' };
+}
+
+/** A saved review from the popup's recent list. */
+async function openSaved(msg, sender) {
+  const key = String(msg.key || '');
+  if (!key.startsWith('game:')) throw new Error('Unknown game.');
+  if (msg.where === 'panel' && (await startPanel(tabOf(msg, sender), 'g=' + encodeURIComponent(key)))) return { where: 'panel' };
+  await openTab(key);
+  return { where: 'tab' };
 }
 
 async function getJSON(url) {
@@ -59,11 +129,14 @@ async function chesscomPublic({ username, id }) {
   );
 }
 
-async function latestGame({ site }) {
+async function latestGame(msg, sender) {
+  const { site, where } = msg;
+  if (where === 'panel') startPanel(tabOf(msg, sender)); // before the first await
   const s = await getSettings();
+  const open = (game) => openReview({ game, where, tabId: msg.tabId }, sender);
   if (site === 'chess.com') {
     if (!s.chesscomUser) throw new Error('Set your chess.com username in settings first.');
-    return chesscomPublic({ username: s.chesscomUser, id: null }).then(async ({ game }) => openReview({ game }));
+    return chesscomPublic({ username: s.chesscomUser, id: null }).then(({ game }) => open(game));
   }
   if (site === 'lichess') {
     if (!s.lichessUser) throw new Error('Set your Lichess username in settings first.');
@@ -78,7 +151,7 @@ async function latestGame({ site }) {
     const headers = parsePgnHeaders(pgn);
     if (!headers.Result || headers.Result === '*') throw new Error("Your latest Lichess game isn't finished yet.");
     const id = (headers.Site || '').split('/').pop();
-    return openReview({ game: { site: 'lichess', id, url: headers.Site, pgn, headers, playerColor: colorOf(s.lichessUser, headers) } });
+    return open({ site: 'lichess', id, url: headers.Site, pgn, headers, playerColor: colorOf(s.lichessUser, headers) });
   }
   throw new Error('Unknown site.');
 }

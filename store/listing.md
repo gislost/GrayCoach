@@ -25,12 +25,14 @@ ENGINE REVIEW, FREE AND LOCAL
 CLAUDE COACH (OPTIONAL)
 • Add your own Anthropic API key and Claude reads the engine report and writes a coach review: what decided the game, the key moments, your strengths and weaknesses, practical tips, and one thing to train next.
 • Ask the coach about any position while you click through the game: "why was this bad?", "what was the plan here?"
+• Click any move the coach mentions to jump the board there. Its suggested moves show as a green arrow.
 • Each review is one API call billed to your Anthropic account. Choose the model in Settings.
 
 HOW TO USE
 1. Open Settings and add your chess.com and/or Lichess username (and an API key if you want the coach).
 2. Finish a game, then click the green "Coach review" button on the game page, or use the toolbar popup.
-3. The popup can also open your latest chess.com or Lichess game, or review any pasted PGN.
+3. The review opens in the side panel next to your game (or in a new tab, if you pick that in Settings).
+4. The popup can also open your latest chess.com or Lichess game, or review any pasted PGN.
 
 FAIR PLAY
 GrayCoach only reviews games that are over. It refuses unfinished games. Using engine help during a game you're playing breaks the rules on chess.com and Lichess.
@@ -71,6 +73,7 @@ Reviews finished chess games from chess.com and Lichess: runs a local Stockfish 
 | --- | --- |
 | `storage` | Saves the user's settings (usernames, coach model, analysis depth, optional Anthropic API key) and their 40 most recent game analyses and reviews, so reviews reopen instantly. |
 | `activeTab` | When the user opens the toolbar popup, reads the current tab's URL to enable "Review this game" on a chess.com or Lichess game page, and asks that page's content script for the finished game. |
+| `sidePanel` | Shows the game review in the browser's side panel next to the chess.com or Lichess tab, only after the user clicks "Coach review" or a popup button. Users can switch to opening reviews in a tab instead. |
 | Host `https://api.chess.com/*` | Reads the user's finished games from chess.com's public API (their latest game, or a game the page didn't provide). |
 | Host `https://lichess.org/*` | Reads the user's finished games from Lichess's public game export API. Also runs the content script that adds the "Coach review" button on Lichess game pages. |
 | Host `https://api.anthropic.com/*` | Sends the game moves and engine report to Anthropic's API with the user's own key, only when the user asks for a coach review or asks the coach a question. |

@@ -19,6 +19,15 @@ main { padding: 16px; max-width: 1680px; margin: 0 auto; }
   .review { grid-template-columns: minmax(320px, 600px) minmax(300px, 1fr); }
   .coach-col { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
 }
+/* side panel (?panel=1): narrow, so everything stacks and the chrome is compact */
+body.in-panel main { padding: 8px; }
+body.in-panel .topbar { padding: 6px 8px; gap: 6px; }
+body.in-panel .topbar .title { display: none; }
+body.in-panel .brand { font-size: 14px; }
+body.in-panel .topbar .btn, body.in-panel .topbar button { padding: 5px 9px; font-size: 13px; }
+body.in-panel .review { gap: 10px; }
+.panel-wait { display: flex; align-items: center; gap: 8px; }
+
 @media (max-width: 860px) {
   main { padding: 10px; }
   .topbar { padding: 8px 10px; gap: 6px; }
@@ -31,6 +40,10 @@ main { padding: 16px; max-width: 1680px; margin: 0 auto; }
 .board-row { display: flex; gap: 8px; align-items: stretch; }
 .board-box { flex: 1; min-width: 0; }
 #board { width: 100%; aspect-ratio: 1 / 1; height: auto; }
+/* Chessground draws the file letters 24px right of the board, past its edge, which makes a narrow
+   page (the side panel) scroll sideways. Keep them in the bottom-right corner of each square. */
+#board coords.files { left: 0; }
+#board coords.files coord { text-align: right; padding-right: 3px; }
 .tag { display: flex; align-items: center; gap: 8px; font-weight: 600; min-height: 22px; padding-left: 30px; }
 .tag .elo { color: var(--muted); font-weight: 500; }
 .tag .you { font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: #fff; }
@@ -121,3 +134,11 @@ main { padding: 16px; max-width: 1680px; margin: 0 auto; }
 .bubble p:last-child, .bubble ul:last-child { margin-bottom: 0; }
 .bubble ul { margin: 0 0 .5em; padding-left: 18px; }
 .chat-form { display: grid; gap: 8px; }
+
+/* moves in the coach's text */
+.mvlink { font-weight: 650; white-space: nowrap; border-radius: 4px; padding: 0 2px; margin: 0 -2px; }
+.mvlink:hover { text-decoration: none; background: color-mix(in srgb, var(--link) 18%, transparent); }
+.mvlink.alt { font-weight: 600; text-decoration: underline dotted; text-underline-offset: 3px; }
+.mvlink.cur { background: var(--accent); color: #fff; text-decoration: none; }
+.move-info .hint-note { margin: 6px 0 0; }
+.move-info .hint-arrow { color: #15781b; font-weight: 800; }
