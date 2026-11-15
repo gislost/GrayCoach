@@ -1,6 +1,13 @@
 import { saveGame } from './lib/store.js';
 import { getSettings } from './lib/settings.js';
 import { parsePgnHeaders, colorOf } from './lib/pgn.js';
+import { checkForUpdate, setUpdateBadge } from './lib/update.js';
+
+// The update check (at most once a day) runs when the browser starts and after an install or update,
+// and puts "NEW" on the toolbar icon if a newer version is out.
+const refreshUpdateBadge = () => checkForUpdate().then(setUpdateBadge).catch(() => {});
+chrome.runtime.onStartup.addListener(refreshUpdateBadge);
+chrome.runtime.onInstalled.addListener(refreshUpdateBadge);
 
 const handlers = { openPanel, openReview, openSaved, panelError, chesscomPublic, latestGame };
 

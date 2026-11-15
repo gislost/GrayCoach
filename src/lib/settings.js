@@ -18,6 +18,7 @@ export const DEFAULTS = {
   depth: 15,
   autoCoach: true,
   openIn: 'panel', // 'panel' (side panel next to the game) or 'tab'
+  checkUpdates: true, // ask GitHub once a day whether a newer version is out (see lib/update.js)
   chesscomUser: '',
   lichessUser: '',
 };

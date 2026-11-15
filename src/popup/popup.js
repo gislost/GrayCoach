@@ -1,5 +1,7 @@
 import { getSettings, MODELS } from '../lib/settings.js';
 import { getRecent } from '../lib/store.js';
+import { assetURL } from '../lib/ext.js';
+import { checkForUpdate, dismissUpdate, setUpdateBadge, UPDATE_PAGE } from '../lib/update.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -114,4 +116,26 @@ async function init() {
   }
 }
 
+// Runs alongside init() and never holds it up: the buttons work while GitHub is being asked.
+async function showUpdate() {
+  const u = await checkForUpdate();
+  await setUpdateBadge(u);
+  if (!u?.newer || u.dismissed) return;
+  $('updateVer').textContent = u.latest;
+  const how = $('updateHow');
+  how.href = assetURL(UPDATE_PAGE);
+  how.target = '_blank';
+  how.addEventListener('click', (e) => {
+    if (typeof chrome === 'undefined' || !chrome.tabs?.create) return; // dev page: a plain link
+    e.preventDefault();
+    openTab(UPDATE_PAGE);
+  });
+  $('updateDismiss').addEventListener('click', () => {
+    $('update').hidden = true;
+    dismissUpdate(u.latest).catch(() => {});
+  });
+  $('update').hidden = false;
+}
+
 init();
+showUpdate().catch(() => {});

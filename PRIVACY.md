@@ -10,6 +10,7 @@ Everything is kept in the extension's local storage in your browser profile:
 
 - **Settings:** your Anthropic API key (if you add one), the coach model, the analysis depth, and your chess.com and Lichess usernames.
 - **Saved games:** the moves and headers (player names, ratings, date, result) of your 40 most recently reviewed games, with their engine analyses and coach reviews, so they reopen instantly.
+- **Update check:** the newest version number GitHub reported, when it was checked, and the version whose notice you hid.
 
 You can delete saved games in Settings → **Delete saved games and reviews**. Removing the extension deletes all of its data.
 
@@ -21,6 +22,7 @@ You can delete saved games in Settings → **Delete saved games and reviews**. R
 | Your chess.com username | `api.chess.com` (public API) | To find your latest game, or a finished game the page couldn't provide. |
 | Your Lichess username | `lichess.org` (public API) | To find your latest game. |
 | A game ID | `www.chess.com` or `lichess.org` | When you click **Coach review** on a game page, the extension reads that game from the site you're on. |
+| Nothing about you: no settings, games, usernames or cookies | `api.github.com` (GitHub's public API) | Once a day, to read the number of the latest GrayCoach release, and when you click **Check now**. GitHub sees what any website sees (your IP address and browser). Turn it off in Settings → **Updates**. |
 
 Stockfish runs inside your browser. Engine analysis never leaves your computer.
 

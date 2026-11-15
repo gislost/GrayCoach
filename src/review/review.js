@@ -9,6 +9,7 @@ import { loadGame, loadReview, saveReview, saveGame } from '../lib/store.js';
 import { assetURL, openOptions, storageSet } from '../lib/ext.js';
 import { colorOf } from '../lib/pgn.js';
 import { linkMoves, linkMoveAt, startsWithSan } from '../lib/movelinks.js';
+import { checkForUpdate, UPDATE_PAGE } from '../lib/update.js';
 
 const CACHE_VERSION = 1;
 const $ = (id) => document.getElementById(id);
@@ -831,4 +832,16 @@ async function main() {
   }
 }
 
+// A link in the top bar while a newer version is out (until it's dismissed from the toolbar popup).
+async function showUpdateLink(inPanel) {
+  const u = await checkForUpdate();
+  if (!u?.newer || u.dismissed) return;
+  const a = $('updateLink');
+  a.href = assetURL(UPDATE_PAGE);
+  a.title = `GrayCoach ${u.latest} is out (you have ${u.current}). Click for how to update.`;
+  if (inPanel) a.textContent = 'Update';
+  a.hidden = false;
+}
+
+showUpdateLink(new URLSearchParams(location.search).has('panel')).catch(() => {});
 main().catch((e) => fatal(e.message || String(e)));

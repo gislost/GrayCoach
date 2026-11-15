@@ -1,6 +1,8 @@
 import { getSettings, saveSettings, MODELS, DEPTHS } from '../lib/settings.js';
 import { verifyKey } from '../lib/coach.js';
 import { clearAllGames } from '../lib/store.js';
+import { isExtension } from '../lib/ext.js';
+import { checkForUpdate, currentVersion, setUpdateBadge } from '../lib/update.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -26,6 +28,7 @@ function readForm() {
     depth: Number($('depth').value),
     autoCoach: $('autoCoach').checked,
     openIn: $('openIn').value,
+    checkUpdates: $('checkUpdates').checked,
     chesscomUser: $('chesscomUser').value.trim(),
     lichessUser: $('lichessUser').value.trim(),
   };
@@ -42,6 +45,7 @@ async function init() {
   $('openIn').value = s.openIn === 'tab' ? 'tab' : 'panel';
   $('chesscomUser').value = s.chesscomUser;
   $('lichessUser').value = s.lichessUser;
+  $('checkUpdates').checked = s.checkUpdates !== false;
 
   let saved = JSON.stringify(readForm());
   const status = $('status');
@@ -59,8 +63,13 @@ async function init() {
     } else {
       status.textContent = 'Saved.';
     }
+    const before = JSON.parse(saved);
     await saveSettings(next);
     saved = JSON.stringify(next);
+    if (next.checkUpdates !== before.checkUpdates) {
+      if (next.checkUpdates) checkForUpdate().then((u) => { renderUpdate(u); return setUpdateBadge(u); }).catch(() => {});
+      else setUpdateBadge(null).catch(() => {});
+    }
   });
 
   $('showKey').addEventListener('click', () => {
@@ -92,9 +101,57 @@ async function init() {
     $('clearStatus').textContent = ` Deleted ${n} saved game${n === 1 ? '' : 's'}.`;
   });
 
+  initUpdates().catch(() => {});
+
   window.addEventListener('beforeunload', (e) => {
     if (JSON.stringify(readForm()) !== saved) e.preventDefault();
   });
+}
+
+// The Updates card: installed version, and the steps when a newer one is out.
+function renderUpdate(u) {
+  const newer = !!u?.newer;
+  $('updSteps').hidden = !newer;
+  if (!newer) return;
+  $('newVer').textContent = u.latest;
+  $('relNotes').href = u.url;
+  $('zipLink').href = u.zip || u.url;
+}
+
+async function initUpdates() {
+  $('curVer').textContent = (await currentVersion()) || 'unknown';
+  if (isExtension) $('reloadExt').addEventListener('click', () => chrome.runtime.reload());
+  else {
+    // dev page: only the extensions-page route applies
+    $('reloadExt').hidden = true;
+    $('reloadAlt').textContent = "Press the reload arrow ↻ on GrayCoach in your browser's extensions page.";
+  }
+
+  const out = $('checkResult');
+  const lastChecked = (u) => `Last checked ${new Date(u.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.`;
+  $('checkNow').addEventListener('click', async () => {
+    const btn = $('checkNow');
+    btn.disabled = true;
+    setResult(out, 'Checking…');
+    try {
+      const u = await checkForUpdate({ force: true });
+      renderUpdate(u);
+      setResult(out, u.newer ? `Version ${u.latest} is out (steps above).` : `You're up to date (${u.current}).`, 'ok');
+      if ($('checkUpdates').checked) await setUpdateBadge(u);
+    } catch (e) {
+      setResult(out, e.message || String(e), 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  try {
+    const u = await checkForUpdate();
+    renderUpdate(u);
+    if (u && !u.newer) setResult(out, lastChecked(u));
+    else if (!u && !$('checkUpdates').checked) setResult(out, 'Daily checks are off.');
+  } catch { /* the Check now button still works */ }
+  if (location.hash === '#updates') $('updates').scrollIntoView({ block: 'start' });
 }
 
 init();

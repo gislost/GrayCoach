@@ -1,6 +1,8 @@
 # Chrome Web Store listing
 
-Everything the Chrome Web Store developer dashboard asks for, ready to paste. Upload `release/graycoach-vX.Y.Z.zip` (from `npm run package`, or the GitHub release) as the package.
+Everything the Chrome Web Store developer dashboard asks for, ready to paste. Upload a `release/graycoach-vX.Y.Z.zip` you built with `npm run package` after the step below (not the GitHub release zip, which has the key in it).
+
+**Before uploading:** delete the `"key"` line from `src/manifest.json` and run `npm run package` again. That key pins the extension ID for zip installs so settings survive updates. The store assigns its own ID, so the key doesn't belong in a store package. Store installs also update themselves, so you may want the GitHub update check off by default in that build (`checkUpdates: false` in `src/lib/settings.js`); if you do, drop the GitHub sentence from the description's PRIVACY paragraph.
 
 Images in this folder come from `npm run build && npm run shots` (a real Stockfish review of Morphy's 1858 Opera Game; no API key, so no coach text). Once you've run a real coach review, a screenshot of it makes a good 4th or 5th image: 1280x800, PNG or JPEG.
 
@@ -38,7 +40,7 @@ FAIR PLAY
 GrayCoach only reviews games that are over. It refuses unfinished games. Using engine help during a game you're playing breaks the rules on chess.com and Lichess.
 
 PRIVACY
-No analytics, no tracking, no account. Your key and saved games stay in your browser. Game data goes to Anthropic only when you ask for a coach review.
+No analytics, no tracking, no account. Your key and saved games stay in your browser. Game data goes to Anthropic only when you ask for a coach review. Once a day GrayCoach asks GitHub for the latest version number (nothing about you is sent); you can turn that off in Settings.
 
 Open source (GPL-3.0): https://github.com/gislost/GrayCoach
 Not affiliated with chess.com, Lichess or Anthropic.

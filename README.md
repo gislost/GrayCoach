@@ -20,7 +20,17 @@ A Chrome/Edge extension that reviews your **finished** chess.com and Lichess gam
 4. Click **Load unpacked** and pick the unzipped folder (the one with `manifest.json` in it).
 5. Pin the extension, open its **Settings** and add your chess.com and Lichess usernames. For the coach review, paste an Anthropic API key from [console.anthropic.com](https://console.anthropic.com/settings/keys). Without a key you still get the full Stockfish review.
 
-To update, download the new zip, replace the folder's contents, and press the reload button on the extension card.
+### Updating
+
+Browsers don't update extensions loaded this way, so GrayCoach checks GitHub once a day and puts **NEW** on its toolbar icon when a newer version is out. The popup and the review page link to the steps, which are also in Settings → **Updates**:
+
+1. Download the new zip from the [latest release](https://github.com/gislost/GrayCoach/releases/latest).
+2. Unzip it and copy everything inside into your GrayCoach folder (the one you picked with **Load unpacked**), replacing the old files.
+3. Click **Reload GrayCoach** in Settings → Updates, or the reload button ↻ on the extension card. Then refresh any open chess.com or Lichess tabs.
+
+Your settings, API key and saved reviews stay. Don't click **Remove** on the extension card: that deletes them. The daily check can be turned off in Settings → Updates.
+
+**Coming from 1.0 or 1.1 (one time only):** older versions got a new extension ID whenever they were loaded from a different folder, and the browser keeps settings per ID. From 1.2.0 the ID is fixed (the `key` in `manifest.json`), so to move over: **Remove** the old GrayCoach, **Load unpacked** the 1.2.0 folder, and enter your API key and usernames one last time. After that, updates keep them.
 
 ### Build from source
 
@@ -47,6 +57,7 @@ Analyses and coach reviews for your last 40 games are saved locally, so they reo
 - The API key is kept in the extension's local storage and is sent only to `api.anthropic.com`.
 - Stockfish runs locally. Only the coach step sends the moves and engine report to Claude.
 - Each coach review is one API call on your key. Follow-up questions are one call each. Pick the model in Settings.
+- Once a day the extension asks GitHub's public API for the latest release number. Nothing about you is sent, and Settings → Updates turns it off.
 - No analytics or tracking. The full policy is in [PRIVACY.md](PRIVACY.md).
 
 ## Fair play

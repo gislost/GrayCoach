@@ -17,6 +17,10 @@
     h1 { font-size: 22px; }
     h2 { font-size: 16px; }
     #status { min-height: 1.5em; }
+    .card:target { border-color: var(--accent); }
+    .steps { margin: 10px 0; padding-left: 22px; display: grid; gap: 8px; }
+    .steps li { padding-left: 2px; }
+    #updNew { margin-bottom: 4px; }
   </style>
 </head>
 <body>
@@ -75,6 +79,30 @@
       <div class="field">
         <label for="lichessUser">Lichess username</label>
         <input type="text" id="lichessUser" autocomplete="off" spellcheck="false">
+      </div>
+    </section>
+
+    <section class="card" id="updates">
+      <h2>Updates</h2>
+      <p class="small" id="updVersion">You have GrayCoach <b id="curVer">…</b>.</p>
+      <div id="updSteps" hidden>
+        <div class="msg ok" id="updNew">GrayCoach <b id="newVer"></b> is out. <a id="relNotes" target="_blank" rel="noopener">What's new</a></div>
+        <ol class="steps">
+          <li><a id="zipLink" target="_blank" rel="noopener">Download the new version</a> (a .zip file).</li>
+          <li>Unzip it and copy everything inside into your GrayCoach folder (the one you picked with "Load unpacked"), replacing the old files.</li>
+          <li id="reloadStep"><button type="button" id="reloadExt" title="Reloads GrayCoach from its folder. This page closes.">Reload GrayCoach</button>
+            <span class="muted small" id="reloadAlt">or press the reload arrow ↻ on GrayCoach in your browser's extensions page.</span></li>
+          <li>Refresh any chess.com or Lichess tabs you have open.</li>
+        </ol>
+        <p class="muted small">Your settings and saved reviews stay. Don't click <b>Remove</b> on the extensions page: that deletes them.</p>
+      </div>
+      <div class="field">
+        <label class="check"><input type="checkbox" id="checkUpdates">
+          <span>Check for a new version once a day (asks GitHub for the latest release number; nothing about you is sent)</span></label>
+      </div>
+      <div class="row">
+        <button type="button" id="checkNow">Check now</button>
+        <span id="checkResult" class="small"></span>
       </div>
     </section>
 

@@ -2,6 +2,7 @@
 .brand { font-weight: 800; font-size: 15px; white-space: nowrap; }
 .title { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .topbar .btn, .topbar button { white-space: nowrap; }
+.topbar .update-link { color: var(--accent-hi); border-color: var(--accent); }
 
 main { padding: 16px; max-width: 1680px; margin: 0 auto; }
 #fatal { margin-bottom: 16px; }
@@ -26,6 +27,7 @@ body.in-panel .topbar .title { display: none; }
 body.in-panel .brand { font-size: 14px; }
 body.in-panel .topbar .btn, body.in-panel .topbar button { padding: 5px 9px; font-size: 13px; }
 body.in-panel .review { gap: 10px; }
+@media (max-width: 379px) { body.in-panel .brand .name { display: none; } } /* room for the update link */
 .panel-wait { display: flex; align-items: center; gap: 8px; }
 
 @media (max-width: 860px) {
