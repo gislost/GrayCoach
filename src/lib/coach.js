@@ -50,12 +50,18 @@ Rules:
 
 export class CoachError extends Error {}
 
+// A Gray Hub token (from Connect in Settings) goes to Gray Hub, which calls Claude with its own key.
+export const HUB = 'https://dojo.grayhub.dev';
+const isHubKey = (key) => typeof key === 'string' && key.startsWith('gch_');
+
 function makeClient(apiKey) {
-  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true, maxRetries: 2 });
+  const hub = isHubKey(apiKey);
+  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true, maxRetries: hub ? 1 : 2, ...(hub ? { baseURL: `${HUB}/api/coach/anthropic` } : {}) });
 }
 
-function friendlyError(e) {
+function friendlyError(e, apiKey) {
   if (e instanceof CoachError) return e;
+  if (isHubKey(apiKey)) return hubError(e);
   if (e instanceof Anthropic.AuthenticationError) return new CoachError('Your Anthropic API key was rejected. Check it in Settings.');
   if (e instanceof Anthropic.PermissionDeniedError) return new CoachError("This API key isn't allowed to use that model. Pick another model in Settings.");
   if (e instanceof Anthropic.NotFoundError) return new CoachError('That model was not found. Pick another model in Settings.');
@@ -63,6 +69,14 @@ function friendlyError(e) {
   if (e instanceof Anthropic.APIConnectionError) return new CoachError("Couldn't reach the Anthropic API. Check your connection and try again.");
   if (e instanceof Anthropic.APIError) return new CoachError(`Anthropic API error${e.status ? ` (${e.status})` : ''}: ${e.message}`);
   return new CoachError(e?.message || String(e));
+}
+
+// Gray Hub's own messages (daily limit, no access, content filter) are written for the player.
+function hubError(e) {
+  if (e instanceof Anthropic.APIConnectionError) return new CoachError("Couldn't reach Gray Hub. Check your connection and try again.");
+  const msg = e?.error?.error?.message || e?.message || String(e);
+  if (e?.status === 401) return new CoachError('GrayCoach is no longer connected to Gray Hub. Connect again in Settings.');
+  return new CoachError(msg);
 }
 
 function checkStop(msg) {
@@ -142,7 +156,7 @@ export async function getReview({ apiKey, model, report }) {
       messages: [{ role: 'user', content: `Here is the game report. Write the coach review.\n\n<game_report>\n${report}\n</game_report>` }],
     });
   } catch (e) {
-    throw friendlyError(e);
+    throw friendlyError(e, apiKey);
   }
   checkStop(msg);
   if (!msg.parsed_output) throw new CoachError("The coach's reply couldn't be read. Try again.");
@@ -176,7 +190,7 @@ export async function askCoach({ apiKey, model, report, review, history, questio
       messages,
     });
   } catch (e) {
-    throw friendlyError(e);
+    throw friendlyError(e, apiKey);
   }
   checkStop(msg);
   const text = msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
@@ -187,9 +201,9 @@ export async function askCoach({ apiKey, model, report, review, history, questio
 /** Cheap check that the key works (model metadata lookup, no tokens billed). */
 export async function verifyKey(apiKey, model) {
   try {
-    const m = await makeClient(apiKey).models.retrieve(model);
+      const m = await makeClient(apiKey).models.retrieve(model);
     return m.display_name || m.id;
   } catch (e) {
-    throw friendlyError(e);
+    throw friendlyError(e, apiKey);
   }
 }

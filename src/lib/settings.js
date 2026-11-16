@@ -14,6 +14,9 @@ export const DEPTHS = [
 
 export const DEFAULTS = {
   apiKey: '',
+  // Gray Hub account (Connect in Settings): its token is used instead of apiKey, see coachKey.
+  hubToken: '',
+  hubUser: '',
   model: 'claude-opus-5-5',
   depth: 15,
   autoCoach: true,
@@ -22,6 +25,9 @@ export const DEFAULTS = {
   chesscomUser: '',
   lichessUser: '',
 };
+
+/** The key the coach uses: the Gray Hub token when connected, else the person's own API key. */
+export const coachKey = (s) => s.hubToken || s.apiKey;
 
 export async function getSettings() {
   const { settings } = await storageGet('settings');

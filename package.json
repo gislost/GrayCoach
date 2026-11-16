@@ -1,6 +1,6 @@
 {
   "name": "graycoach",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Browser extension: post-game Stockfish analysis + Claude coach review for chess.com and Lichess",
   "license": "GPL-3.0-or-later",

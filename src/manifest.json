@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GrayCoach",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "After a chess.com or Lichess game: Stockfish analysis plus a Claude coach review with tips. Finished games only.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAowSaZdzLDkJs5sQTCYCQAO4VamtKvrexxf0Y49saunYsfSPCNlJsDpsJ/mvkjsRi4vocceon2yk9qVzf0+Hixw3qPmmgqyGiL065AqW5nOVCZ+3E8V6dG/FBumCiaymmhIKICXV2Yz4domiCYAQ9f/Nk+lFXPwyXDiYpVyKvwAcOdafDgsR0+n2y/2KTmK3eDDAbnm7iD/lf3gCoTxmKEVYhG0jtcTU+cHshNe0sPJV/VsoJ0UQJBFQKYjju0DBP6WzJEf4IU6Vo2cmrNGBEO7/TSqKrOY+/SszMxVvHpRX25aOeZ/HRWu9++xU8KpyLFz19ACrS4SUEgVRbpXrWGwIDAQAB",
   "homepage_url": "https://github.com/gislost/GrayCoach",
@@ -11,6 +11,7 @@
     "https://lichess.org/*",
     "https://api.anthropic.com/*"
   ],
+  "externally_connectable": { "matches": ["https://dojo.grayhub.dev/*"] },
   "background": { "service_worker": "background.js", "type": "module" },
   "content_scripts": [
     { "matches": ["https://www.chess.com/*"], "js": ["content/chesscom.js"], "run_at": "document_idle" },

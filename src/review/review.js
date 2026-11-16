@@ -4,7 +4,7 @@ import { buildGame, movePrefix, uciLineToSan, formatLine } from '../lib/game.js'
 import { Engine } from '../lib/engine.js';
 import { analysePositions, gradeGame, CLASSES, BAD, wpWhite, formatEval } from '../lib/analysis.js';
 import { buildGameReport, getReview, askCoach } from '../lib/coach.js';
-import { getSettings, MODELS } from '../lib/settings.js';
+import { getSettings, coachKey, MODELS } from '../lib/settings.js';
 import { loadGame, loadReview, saveReview, saveGame } from '../lib/store.js';
 import { assetURL, openOptions, storageSet } from '../lib/ext.js';
 import { colorOf } from '../lib/pgn.js';
@@ -506,7 +506,7 @@ function onAnalysed() {
   show(S.cur);
   renderCoach();
   renderChat();
-  if (!S.cache.coach && S.settings.apiKey && S.settings.autoCoach) runCoach();
+  if (!S.cache.coach && coachKey(S.settings) && S.settings.autoCoach) runCoach();
 }
 
 // ---------- coach ----------
@@ -527,7 +527,7 @@ async function runCoach() {
   S.coachError = null;
   renderCoach();
   try {
-    const { review, model } = await getReview({ apiKey: S.settings.apiKey, model: S.settings.model, report: report() });
+    const { review, model } = await getReview({ apiKey: coachKey(S.settings), model: S.settings.model, report: report() });
     S.cache = { ...S.cache, coach: review, coachModel: model, coachFor: S.playerColor || null, chat: [] };
     await saveReview(S.key, S.cache);
   } catch (e) {
@@ -557,9 +557,9 @@ function renderCoach() {
   }
   const r = S.cache?.coach;
   if (!r) {
-    if (!s.apiKey) {
+    if (!coachKey(s)) {
       el.innerHTML = `<h3>Coach review</h3>
-        <p>Add your Anthropic API key in Settings to get a written review and tips from Claude.</p>
+        <p>Connect your Gray Hub account or add an Anthropic API key in Settings to get a written review and tips from Claude.</p>
         <button type="button" class="primary" id="coachSettings">Open settings</button>`;
       $('coachSettings').addEventListener('click', openOptions);
       return;
@@ -609,7 +609,7 @@ function renderCoach() {
     n.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
   });
   $('coachRerun').addEventListener('click', () => {
-    if (!s.apiKey) return openOptions();
+    if (!coachKey(s)) return openOptions();
     runCoach();
   });
   $('coachSwitch')?.addEventListener('click', runCoach);
@@ -645,7 +645,7 @@ function positionContext() {
 
 function renderChat() {
   const card = $('chatCard');
-  card.hidden = !(S.graded && S.settings.apiKey);
+  card.hidden = !(S.graded && coachKey(S.settings));
   if (card.hidden) return;
   const chat = S.cache?.chat || [];
   $('chatLog').innerHTML = chat
@@ -671,7 +671,7 @@ async function sendChat(question) {
   try {
     const history = chat.slice(0, -1).map((t) => ({ role: t.role, content: t.content }));
     const { text, userTurn } = await askCoach({
-      apiKey: S.settings.apiKey,
+      apiKey: coachKey(S.settings),
       model: S.settings.model,
       report: report(),
       review: S.cache.coach || null,

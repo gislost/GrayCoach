@@ -18,7 +18,7 @@ A Chrome/Edge extension that reviews your **finished** chess.com and Lichess gam
 2. Open `chrome://extensions` (or `edge://extensions` in Edge).
 3. Turn on **Developer mode**.
 4. Click **Load unpacked** and pick the unzipped folder (the one with `manifest.json` in it).
-5. Pin the extension, open its **Settings** and add your chess.com and Lichess usernames. For the coach review, paste an Anthropic API key from [console.anthropic.com](https://console.anthropic.com/settings/keys). Without a key you still get the full Stockfish review.
+5. Pin the extension, open its **Settings** and add your chess.com and Lichess usernames. For the coach review, either press **Connect Gray Hub** to use your Gray Hub account's Claude (counts toward its daily AI limit; the admin turns on GrayCoach for your account), or paste an Anthropic API key from [console.anthropic.com](https://console.anthropic.com/settings/keys). Without either you still get the full Stockfish review.
 
 ### Updating
 
@@ -55,6 +55,7 @@ Analyses and coach reviews for your last 40 games are saved locally, so they reo
 ## Privacy and cost
 
 - The API key is kept in the extension's local storage and is sent only to `api.anthropic.com`.
+- When Gray Hub is connected, the coach requests (the game report and your questions) go to `dojo.grayhub.dev`, which passes them to Claude. The connection token is kept in the extension's local storage; Disconnect in Settings revokes it.
 - Stockfish runs locally. Only the coach step sends the moves and engine report to Claude.
 - Each coach review is one API call on your key. Follow-up questions are one call each. Pick the model in Settings.
 - Once a day the extension asks GitHub's public API for the latest release number. Nothing about you is sent, and Settings → Updates turns it off.

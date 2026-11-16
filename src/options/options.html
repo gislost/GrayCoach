@@ -27,10 +27,23 @@
   <main>
     <h1>♞ GrayCoach settings</h1>
 
+    <section class="card" id="hub">
+      <h2>Gray Hub account</h2>
+      <p class="muted small">Connect your Gray Hub account and the coach uses Gray Hub's Claude, so you don't need your own API key.
+        Each review or question counts toward your Gray Hub daily AI limit. The admin has to turn on GrayCoach for your account.</p>
+      <div id="hubOff">
+        <button type="button" class="primary" id="hubConnect">Connect Gray Hub</button>
+      </div>
+      <div id="hubOn" hidden>
+        <p class="small">Connected as <b id="hubName"></b>. <span id="hubStatus" class="muted"></span></p>
+        <button type="button" id="hubDisconnect">Disconnect</button>
+      </div>
+    </section>
+
     <section class="card">
       <h2>Claude coach</h2>
       <div class="field">
-        <label for="apiKey">Anthropic API key</label>
+        <label for="apiKey">Anthropic API key <span class="muted small" id="keyNote"></span></label>
         <div class="key-row">
           <input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
           <button type="button" id="showKey">Show</button>

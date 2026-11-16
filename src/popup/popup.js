@@ -1,4 +1,4 @@
-import { getSettings, MODELS } from '../lib/settings.js';
+import { getSettings, coachKey, MODELS } from '../lib/settings.js';
 import { getRecent } from '../lib/store.js';
 import { assetURL } from '../lib/ext.js';
 import { checkForUpdate, dismissUpdate, setUpdateBadge, UPDATE_PAGE } from '../lib/update.js';
@@ -41,7 +41,7 @@ async function send(msg) {
 async function init() {
   const s = await getSettings();
   const model = MODELS.find((m) => m.id === s.model)?.label.replace(/\s*\(.*\)$/, '') || s.model;
-  $('keyStatus').textContent = s.apiKey ? `Coach: ${model}` : 'Engine only (add an API key for the coach)';
+  $('keyStatus').textContent = !coachKey(s) ? 'Engine only (connect Gray Hub or add an API key in Settings)' : s.hubToken ? `Coach: ${model} via Gray Hub` : `Coach: ${model}`;
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   // Side panel mode: the panel must be opened during the click, so these messages go out before any await.

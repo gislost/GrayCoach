@@ -1,5 +1,5 @@
 import { saveGame } from './lib/store.js';
-import { getSettings } from './lib/settings.js';
+import { getSettings, saveSettings } from './lib/settings.js';
 import { parsePgnHeaders, colorOf } from './lib/pgn.js';
 import { checkForUpdate, setUpdateBadge } from './lib/update.js';
 
@@ -25,6 +25,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     },
   );
   return true; // async response
+});
+
+// ---------- Gray Hub account ----------
+// dojo.grayhub.dev/coach-connect hands GrayCoach a token for the signed-in Gray Hub account, so the
+// coach uses Gray Hub's Claude instead of the person's own API key. Only that page can send these.
+chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
+  if (sender.origin !== 'https://dojo.grayhub.dev') return;
+  if (msg?.type === 'graycoach-ping') {
+    sendResponse({ ok: true, version: chrome.runtime.getManifest().version });
+    return;
+  }
+  if (msg?.type === 'graycoach-connect' && /^gch_[0-9a-f]{64}$/.test(msg.token || '')) {
+    saveSettings({ hubToken: msg.token, hubUser: String(msg.username || '').slice(0, 40) }).then(
+      () => sendResponse({ ok: true }),
+      (e) => sendResponse({ ok: false, error: e?.message || String(e) }),
+    );
+    return true; // async response
+  }
 });
 
 // ---------- where reviews open ----------

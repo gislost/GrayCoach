@@ -1,5 +1,5 @@
-import { getSettings, saveSettings, MODELS, DEPTHS } from '../lib/settings.js';
-import { verifyKey } from '../lib/coach.js';
+import { getSettings, saveSettings, coachKey, MODELS, DEPTHS } from '../lib/settings.js';
+import { verifyKey, HUB } from '../lib/coach.js';
 import { clearAllGames } from '../lib/store.js';
 import { isExtension } from '../lib/ext.js';
 import { checkForUpdate, currentVersion, setUpdateBadge } from '../lib/update.js';
@@ -81,7 +81,8 @@ async function init() {
 
   $('testKey').addEventListener('click', async () => {
     const out = $('keyResult');
-    const { apiKey, model } = readForm();
+    const { model } = readForm();
+    const apiKey = coachKey({ ...(await getSettings()), apiKey: readForm().apiKey });
     if (!apiKey) return setResult(out, 'Enter a key first.', 'err');
     $('testKey').disabled = true;
     setResult(out, 'Checking…');
@@ -102,10 +103,55 @@ async function init() {
   });
 
   initUpdates().catch(() => {});
+  initHub().catch(() => {});
 
   window.addEventListener('beforeunload', (e) => {
     if (JSON.stringify(readForm()) !== saved) e.preventDefault();
   });
+}
+
+// The Gray Hub card: Connect opens dojo.grayhub.dev/coach-connect, which sends the token to
+// background.js; this page notices the change in storage and shows it.
+async function initHub() {
+  const render = async () => {
+    const s = await getSettings();
+    const on = !!s.hubToken;
+    $('hubOff').hidden = on;
+    $('hubOn').hidden = !on;
+    $('keyNote').textContent = on ? '(not used while Gray Hub is connected)' : '';
+    if (!on) return;
+    $('hubName').textContent = s.hubUser || 'your account';
+    $('hubStatus').textContent = '';
+    try {
+      const r = await fetch(`${HUB}/api/coach/status`, { headers: { 'x-api-key': s.hubToken } });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error?.message || `Gray Hub error ${r.status}`);
+      const ai = d.ai || {};
+      $('hubStatus').textContent = !d.claude
+        ? "Gray Hub doesn't have Claude set up yet."
+        : ai.enabled === false
+          ? 'AI is turned off for this account.'
+          : ai.limit
+            ? `${ai.used} of ${ai.limit} AI uses today.`
+            : '';
+    } catch (e) {
+      $('hubStatus').textContent = e.message || String(e);
+    }
+  };
+  $('hubConnect').addEventListener('click', () => window.open(`${HUB}/coach-connect`, '_blank', 'noopener'));
+  $('hubDisconnect').addEventListener('click', async () => {
+    const s = await getSettings();
+    // Forget the token on Gray Hub too; if that fails it still stops working here.
+    fetch(`${HUB}/api/coach/token`, { method: 'DELETE', headers: { 'x-api-key': s.hubToken } }).catch(() => {});
+    await saveSettings({ hubToken: '', hubUser: '' });
+    render();
+  });
+  if (isExtension) {
+    chrome.storage.onChanged.addListener((ch) => {
+      if (ch.settings && ch.settings.newValue?.hubToken !== ch.settings.oldValue?.hubToken) render();
+    });
+  }
+  await render();
 }
 
 // The Updates card: installed version, and the steps when a newer one is out.
